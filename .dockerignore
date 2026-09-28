@@ -1,0 +1,11 @@
+# Allow only runtime inputs into any future Docker build context.
+**
+!app/
+!app/**
+!static/
+!static/**
+!requirements.txt
+!requirements-lock.txt
+!Dockerfile
+app/**/__pycache__/
+app/**/*.pyc
