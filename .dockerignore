@@ -7,5 +7,7 @@
 !requirements.txt
 !requirements-lock.txt
 !Dockerfile
+!docs/
+!docs/translation-glossary-draft.md
 app/**/__pycache__/
 app/**/*.pyc
