@@ -5,6 +5,12 @@ let sourceVersion = 0;
 let outputVersion = -1;
 let approvedSnapshot = null;
 let uploadReviewRequired = false;
+let sourceType = 'paste';
+let feedbackEnabled = false;
+let currentWorkflowId = null;
+let originalTranslation = '';
+let translatedSource = '';
+let translationReadyAt = 0;
 function clearAttachment() {
   $('attachment-name').textContent = ''; $('remove-attachment').hidden = true;
   $('upload-state').textContent = ''; $('page-preview').replaceChildren(); $('page-preview').hidden = true;
@@ -35,7 +41,7 @@ function buttons() {
   $('output').readOnly = busy;
 }
 function changedSource() {
-  revokeApproval();
+  revokeApproval(); currentWorkflowId = null; $('feedback').hidden = true;
   sourceVersion++;
   $('counter').textContent = `${$('source').value.length.toLocaleString()} / 5,000`;
   $('notes').hidden = true;
@@ -57,12 +63,13 @@ $('direction').addEventListener('change', () => {
 $('output').addEventListener('input', () => {
   revokeApproval();
   $('notes').hidden = true;
+  if (selectedRating() && selectedRating() !== 'good') $('feedback-consent').hidden = $('output').value === originalTranslation;
   $('output-state').textContent = outputVersion === sourceVersion ? 'Edited by you. Review changes against the source.' : 'Source changed. Translate again to update this result.';
   buttons();
 });
 $('clear').addEventListener('click', () => {
   clearAttachment();
-  uploadReviewRequired = false; $('source-review').hidden = true; $('source-reviewed').checked = false;
+  uploadReviewRequired = false; sourceType = 'paste'; $('source-review').hidden = true; $('source-reviewed').checked = false;
   $('source').value = ''; $('output').value = ''; $('output-state').textContent = 'Your translation will appear here.';
   changedSource(); $('source').focus();
 });
@@ -75,12 +82,12 @@ $('translator').addEventListener('submit', async event => {
   if (busy || !configured || !$('source').value.trim()) return;
   if (uploadReviewRequired && !$('source-reviewed').checked) { message('Check the extracted text against your document and confirm it before translating.', true); return; }
   if ($('output').value && !window.confirm('Replace the current translation, including your edits?')) return;
-  revokeApproval(); busy = true; buttons(); message('Translating…'); $('notes').hidden = true;
+  revokeApproval(); currentWorkflowId = null; $('feedback').hidden = true; busy = true; buttons(); message('Translating…'); $('notes').hidden = true;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 95000);
   try {
     const response = await fetch('/api/translate/stream', {method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({text:$('source').value, direction:$('direction').value}), signal:controller.signal});
+      body:JSON.stringify({text:$('source').value, direction:$('direction').value, source_type:sourceType, source_reviewed:!uploadReviewRequired || $('source-reviewed').checked}), signal:controller.signal});
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Translation failed. Please try again.');
@@ -110,6 +117,9 @@ $('translator').addEventListener('submit', async event => {
     } finally { await reader.cancel().catch(() => {}); }
     if (!result) throw new Error('The connection ended before translation completed. Your text is unchanged.');
     $('output').value = result.translation; outputVersion = sourceVersion;
+    currentWorkflowId = result.workflow_id || null; originalTranslation = result.translation;
+    translatedSource = $('source').value; translationReadyAt = Date.now();
+    $('feedback').hidden = !feedbackEnabled || !currentWorkflowId; $('feedback-state').textContent = '';
     $('output-state').textContent = 'Draft translation · review before use';
     $('notes-list').replaceChildren();
     const notes = [...result.warnings, ...result.notes.map(note => `${note.source_span} — ${note.reason}`)];
@@ -125,7 +135,7 @@ async function initialize() {
   try {
     const response = await fetch('/api/status');
     if (!response.ok) throw new Error();
-    const status = await response.json(); configured = status.configured;
+    const status = await response.json(); configured = status.configured; feedbackEnabled = !!status.feedback_enabled;
     $('connection').textContent = configured ? 'Translation connection configured. Use a short sample to check it.' : 'Translation is not connected yet. Set GEMINI_API_KEY and GEMINI_MODEL in the local .env file, then restart the server.';
   } catch { $('connection').textContent = 'Cannot connect to the local server. Refresh after it is running.'; }
   buttons();
@@ -158,7 +168,7 @@ $('document').addEventListener('change', async () => {
     if (!response.ok) throw new Error(result.detail || 'Could not read this document.');
     clearAttachment();
     $('source').value = result.text; $('output').value = ''; outputVersion = -1;
-    uploadReviewRequired = true; $('source-reviewed').checked = false; $('source-review').hidden = false;
+    uploadReviewRequired = true; sourceType = extension; $('source-reviewed').checked = false; $('source-review').hidden = false;
     $('output-state').textContent = 'Review the extracted source, choose the direction, then translate.';
     changedSource();
     $('attachment-name').textContent = file.name; $('remove-attachment').hidden = false;
@@ -183,6 +193,7 @@ $('approve').addEventListener('change', () => {
 $('download').addEventListener('click', async () => {
   if (busy || approvedSnapshot !== snapshot() || $('download').disabled) return;
   const payload = {text:$('output').value, direction:$('direction').value, approved:true};
+  if (currentWorkflowId) payload.workflow_id = currentWorkflowId;
   busy = true; buttons();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 30000);
@@ -196,4 +207,44 @@ $('download').addEventListener('click', async () => {
     message('Word document downloaded with your reviewed text.');
   } catch (error) { message(error.name === 'AbortError' ? 'Download timed out. Your text is unchanged.' : error.message, true); }
   finally { clearTimeout(timer); busy = false; buttons(); }
+});
+
+const ratingIds = ['rating-good','rating-corrected','rating-unusable'];
+const categoryNames = ['meaning','terminology','name','number','formatting','fluency','other'];
+function selectedRating() {
+  for (const id of ratingIds) if ($(id).checked) return $(id).value;
+  return null;
+}
+for (const id of ratingIds) $(id).addEventListener('change', () => {
+  const needsDetail = selectedRating() !== 'good';
+  $('feedback-categories').hidden = !needsDetail;
+  $('feedback-consent').hidden = !needsDetail || $('output').value === originalTranslation;
+});
+$('submit-feedback').addEventListener('click', async () => {
+  const rating = selectedRating();
+  if (!rating) { $('feedback-state').textContent = 'Choose a rating first.'; return; }
+  const categories = categoryNames.filter(name => $(`category-${name}`).checked);
+  if (rating !== 'good' && !categories.length) { $('feedback-state').textContent = 'Choose what needed correction.'; return; }
+  const consent = $('store-example').checked;
+  const payload = {
+    workflow_id: currentWorkflowId, rating, categories,
+    was_edited: $('output').value !== originalTranslation,
+    correction_seconds: Math.min(86400, Math.max(0, Math.round((Date.now() - translationReadyAt) / 1000))),
+    consent_to_store_text: consent
+  };
+  if (consent) {
+    payload.source_text = translatedSource;
+    payload.original_translation = originalTranslation;
+    payload.corrected_translation = $('output').value;
+  }
+  $('submit-feedback').disabled = true; $('feedback-state').textContent = 'Saving feedback…';
+  try {
+    const response = await fetch('/api/feedback', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || 'Feedback could not be saved.');
+    $('feedback-state').textContent = 'Thank you. Your feedback was saved.';
+  } catch (error) {
+    $('feedback-state').textContent = error.message;
+    $('submit-feedback').disabled = false;
+  }
 });

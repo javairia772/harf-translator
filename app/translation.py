@@ -20,6 +20,8 @@ class TranslationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     text: str = Field(min_length=1, max_length=MAX_CHARACTERS)
     direction: Literal["en-ur", "ur-en"]
+    source_type: Literal["paste", "docx", "pdf"] = "paste"
+    source_reviewed: bool = False
 
     @field_validator("text")
     @classmethod
@@ -51,6 +53,16 @@ class ModelTranslation(BaseModel):
 def configuration():
     return os.getenv("GEMINI_API_KEY", "").strip(), os.getenv("GEMINI_MODEL", "").strip()
 
+
+def glossary_sha256():
+    try:
+        return hashlib.sha256((ROOT / "docs/translation-glossary-draft.md").read_bytes()).hexdigest()
+    except OSError:
+        return "missing"
+
+
+def prompt_version():
+    return os.getenv("PROMPT_VERSION", "translation-v1").strip() or "translation-v1"
 
 def system_prompt(profile="domain"):
     if profile == "basic":

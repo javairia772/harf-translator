@@ -11,3 +11,4 @@ evaluation-results/
 .coverage
 htmlcov/
 *.log
+*.db

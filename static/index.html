@@ -12,14 +12,34 @@
 <section class="pane"><div class="pane-heading"><label id="source-label" for="source">English source</label><span id="counter">0 / 5,000</span></div><textarea id="source" lang="en" dir="ltr" maxlength="5000" spellcheck="false" placeholder="Paste the text you want to translate…" required></textarea><div class="pane-footer attachment-bar"><button id="attach" type="button" class="quiet" aria-label="Attach Word or PDF" title="Attach Word or PDF"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M8 12l7-7a4 4 0 0 1 6 6L10 22a6 6 0 0 1-8-8L13 3" fill="none" stroke="currentColor" stroke-width="2"/></svg> Attach file</button><input id="document" type="file" accept=".docx,.pdf" hidden><span id="attachment-name"></span><button id="remove-attachment" type="button" class="quiet" hidden>Remove file and text</button></div><p class="attachment-help">Word or text-based PDF · up to 2 MiB · 5,000 characters · PDF up to 10 pages. No OCR.</p><p id="upload-state" class="attachment-help" role="status"></p><div id="page-preview" class="page-preview" hidden></div><label id="source-review" class="attachment-help source-review" hidden><input id="source-reviewed" type="checkbox"> I checked the extracted text against the file and corrected missing words or reading-order errors.</label></section>
 <section class="pane output"><div class="pane-heading"><label id="output-label" for="output">Urdu translation</label><span>Editable</span></div><textarea id="output" lang="ur" dir="rtl" spellcheck="false" placeholder="ترجمہ یہاں ظاہر ہوگا" aria-describedby="review"></textarea><div class="pane-footer"><span id="output-state">Your translation will appear here.</span><button id="copy" class="quiet" type="button" disabled>Copy translation</button></div></section>
 </div>
-<div class="actions"><p>Text is sent to the configured translation provider when you translate.<br>This app does not save your text.</p><button id="translate" type="submit">Translate text <span aria-hidden="true">↗</span></button></div>
+<div class="actions"><p>Text is sent to the configured translation provider when you translate.<br>Translation text is not stored. You may explicitly opt in to save an encrypted correction as feedback.</p><button id="translate" type="submit">Translate text <span aria-hidden="true">↗</span></button></div>
 </form>
 <section class="approval" aria-label="Review and download">
 <label><input id="approve" type="checkbox" disabled> I have reviewed the current translation against the source, including names, numbers and meaning.</label>
 <button id="download" type="button" disabled>Download Word (.docx)</button>
 <p id="approval-state" role="status">Review a translation to enable approval. Editing it will clear approval.</p>
 </section>
-<p id="message" role="status" aria-live="polite"></p>
+<section id="feedback" class="feedback" aria-label="Translation feedback" hidden>
+<h2>Help improve this translator</h2>
+<p>Rate the translation after reviewing it. Ratings and problem categories contain no document text.</p>
+<div class="feedback-rating" role="radiogroup" aria-label="Translation quality">
+<label><input type="radio" id="rating-good" name="rating" value="good"> Good</label>
+<label><input type="radio" id="rating-corrected" name="rating" value="corrected"> Needed corrections</label>
+<label><input type="radio" id="rating-unusable" name="rating" value="unusable"> Not usable</label>
+</div>
+<fieldset id="feedback-categories" hidden><legend>What needed correction?</legend>
+<label><input type="checkbox" id="category-meaning" name="category" value="meaning"> Meaning</label>
+<label><input type="checkbox" id="category-terminology" name="category" value="terminology"> Office terminology</label>
+<label><input type="checkbox" id="category-name" name="category" value="name"> Name</label>
+<label><input type="checkbox" id="category-number" name="category" value="number"> Number or date</label>
+<label><input type="checkbox" id="category-formatting" name="category" value="formatting"> Formatting</label>
+<label><input type="checkbox" id="category-fluency" name="category" value="fluency"> Fluency</label>
+<label><input type="checkbox" id="category-other" name="category" value="other"> Other</label>
+</fieldset>
+<label id="feedback-consent" class="consent" hidden><input id="store-example" type="checkbox"> I allow this source, original translation and my reviewed correction to be stored as an encrypted evaluation example.</label>
+<button id="submit-feedback" type="button">Send feedback</button>
+<p id="feedback-state" role="status"></p>
+</section><p id="message" role="status" aria-live="polite"></p>
 <aside id="notes" hidden><h2>Details to review</h2><ul id="notes-list"></ul></aside>
 <p id="review" class="review">Review names, dates, amounts and meaning before use. Automated checks are limited; a translation does not certify legal validity.</p>
 </main><footer>Focused on words. Faithful to meaning.<span>English / اردو</span></footer>

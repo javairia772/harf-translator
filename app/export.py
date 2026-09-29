@@ -1,6 +1,7 @@
 """Export reviewed plain text without a model call or stored document."""
 from io import BytesIO
 from typing import Literal
+from uuid import UUID
 import re
 
 from docx import Document
@@ -15,6 +16,7 @@ class ExportRequest(BaseModel):
     text: str = Field(min_length=1, max_length=30000)
     direction: Literal["en-ur", "ur-en"]
     approved: Literal[True]
+    workflow_id: UUID | None = None
 
     @field_validator("text")
     @classmethod

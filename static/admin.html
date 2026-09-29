@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Harf developer dashboard</title><link rel="stylesheet" href="/static/admin.css"><script defer src="/static/admin.js"></script></head>
+<body><header><div><p>HARF / OPERATIONS</p><h1>Developer dashboard</h1></div><label>Window <select id="window"><option value="1">1 hour</option><option value="6">6 hours</option><option value="24" selected>24 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="720">30 days</option></select></label></header>
+<main><p id="state" role="status">Loading telemetry…</p><section id="cards" class="cards"></section>
+<section><h2>Failures</h2><div id="errors" class="tags"></div></section>
+<section><h2>Human feedback</h2><div id="feedback" class="grid"></div></section>
+<section><h2>Traffic by hour <small>Asia/Karachi</small></h2><div class="table"><table><thead><tr><th>Hour</th><th>Translations</th><th>Provider attempts</th><th>Errors</th></tr></thead><tbody id="hourly"></tbody></table></div></section>
+<section><h2>Versions observed</h2><ul id="versions"></ul></section>
+<p class="privacy">This dashboard shows anonymous aggregates. It does not display source or translated document text.</p></main></body></html>

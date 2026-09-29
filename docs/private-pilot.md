@@ -1,6 +1,8 @@
 # Private pilot release
 
-Scope: pasted text or simple .docx/text-based PDF upload, extracted-text preview and confirmation, editable translation, explicit approval and Word download. No image/legacy .doc uploads, OCR, PDF export, accounts database or saved document history.
+Access update: ACCESS_MODE defaults to private. Set ACCESS_MODE=public explicitly to remove the browser sign-in prompt. Public mode permits anyone to consume the shared provider quota; production request/body limits and explicit ALLOWED_HOSTS remain enforced. Keep APP_ENV=production. Pilot credentials are ignored in public mode. Rate limits reset on restart and are not a spending cap.
+
+Scope: pasted text or simple .docx/text-based PDF upload, extracted-text preview and confirmation, editable translation, explicit approval and Word download. No image/legacy .doc uploads, OCR, PDF export, user accounts or saved document history. Operational workflow events are stored without document text when DATABASE_URL is configured.
 
 Word uploads are limited to 2 MiB compressed, 8 MiB expanded and 256 ZIP members; extracted text must fit the existing 5,000-character limit. Parsing is in memory with network/entity resolution disabled. Paragraphs and simple tables are supported; table layout is flattened and requires review. Images, fields, automatic numbering, revisions, headers/footers with text, notes and complex structures are rejected to avoid silent omissions. The uploaded file is not sent to the translation provider or saved by the app.
 
@@ -25,6 +27,13 @@ PILOT_USERNAME=your-pilot-user
 PILOT_PASSWORD=<random secret of at least 20 characters>
 GEMINI_API_KEY=<rotated provider key>
 GEMINI_MODEL=<available tested model>
+ACCESS_MODE=private
+DATABASE_URL=<Render PostgreSQL internal URL>
+SESSION_HASH_SALT=<long random value>
+ADMIN_USERNAME=<separate developer user>
+ADMIN_PASSWORD=<random secret of at least 20 characters>
+PROMPT_VERSION=translation-v1
+FEEDBACK_ENCRYPTION_KEY=<Fernet key for explicitly consented examples>
 ```
 
 Set the health-check path to /healthz. Production startup fails without explicit hosts and pilot credentials. Behind a proxy, ensure Uvicorn trusts forwarded headers only from that proxy so same-origin requests see the correct HTTPS scheme; configure FORWARDED_ALLOW_IPS for the actual hosting environment. Never add wildcard allowed hosts to work around a configuration problem.

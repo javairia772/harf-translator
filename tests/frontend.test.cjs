@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 
 function setup(events, fail=false, uploaded=null, confirm=true) {
-  const nodes = new Map(), messages = [], exports = [], uploads = [];
+  const nodes = new Map(), messages = [], exports = [], uploads = [], feedbacks = [];
   const get = id => {
     if (!nodes.has(id)) nodes.set(id, {
       value: id === 'direction' ? 'en-ur' : '', disabled:false, hidden:true,
@@ -20,9 +20,10 @@ function setup(events, fail=false, uploaded=null, confirm=true) {
     URL:{createObjectURL:()=> 'blob:test',revokeObjectURL(){}},
     navigator:{clipboard:{writeText:async()=>{}}}, TextDecoder, AbortController, setTimeout, clearTimeout,
     fetch:async (url, options) => {
-      if(url==='/api/status') return {ok:true,json:async()=>({configured:true})};
+      if(url==='/api/status') return {ok:true,json:async()=>({configured:true,feedback_enabled:true})};
       if(url==='/api/upload') { uploads.push(options);return {ok:!fail,json:async()=>uploaded || {detail:'Unsupported document'}}; }
       if(url==='/api/export/docx') {exports.push(JSON.parse(options.body));return {ok:true,blob:async()=>({})};}
+      if(url==='/api/feedback') {feedbacks.push(JSON.parse(options.body));return {ok:true,json:async()=>({saved:true})};}
       if(fail) throw new Error('network unavailable');
       const bytes = new TextEncoder().encode(events.map(x=>JSON.stringify(x)).join('\n')+'\n');
       let at=0;
@@ -33,7 +34,7 @@ function setup(events, fail=false, uploaded=null, confirm=true) {
     }};
   vm.createContext(context);
   vm.runInContext(fs.readFileSync('static/app.js','utf8'),context);
-  return {get,messages,exports,uploads};
+  return {get,messages,exports,uploads,feedbacks};
 }
 
 test('fragmented Urdu response, retry progress, and stale result protection',async()=>{
@@ -143,4 +144,16 @@ test('incomplete stream cannot be mistaken for a completed translation',async()=
   await get('translator').listeners.submit({preventDefault(){}});
   assert.equal(get('output').value,'');
   assert.ok(messages.some(text=>text.includes('ended before translation completed')));
+});
+
+test('feedback sends only metrics unless the user explicitly consents to text storage',async()=>{
+  const {get,feedbacks}=setup([{type:'result',workflow_id:'00000000-0000-0000-0000-000000000001',translation:'اصل ترجمہ',warnings:[],notes:[]}]);
+  await new Promise(resolve=>setImmediate(resolve));
+  get('source').value='Original source';get('source').listeners.input();
+  await get('translator').listeners.submit({preventDefault(){}});
+  get('rating-good').value='good';get('rating-good').checked=true;get('rating-good').listeners.change();
+  await get('submit-feedback').listeners.click();
+  assert.equal(feedbacks.length,1);assert.equal(feedbacks[0].rating,'good');
+  assert.equal('source_text' in feedbacks[0],false);
+  assert.equal('original_translation' in feedbacks[0],false);
 });

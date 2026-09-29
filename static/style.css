@@ -4,3 +4,9 @@
 .attachment-bar{flex-wrap:wrap;justify-content:flex-start}.attachment-bar button{display:inline-flex;align-items:center;gap:6px}.attachment-bar [hidden]{display:none}#attachment-name{overflow-wrap:anywhere;max-width:220px}.attachment-help{margin:0;padding:0 22px 12px;font-size:12px;color:#65716a;line-height:1.6}.page-preview{padding:0 22px 12px}.page-preview summary{cursor:pointer;font-size:12px}.page-preview pre{white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.8 Arial,sans-serif;max-height:180px;overflow:auto}
 
 .source-review:not([hidden]){display:block;color:#473c24;background:#fff2d9;padding-top:12px}.source-review input{margin-right:6px}
+
+.feedback{margin-top:1.25rem;border:1px solid var(--line,#d8d8d0);padding:1rem 1.25rem;background:#fff}
+.feedback h2{font-size:1rem;margin:0 0 .35rem}.feedback p{margin:.25rem 0 .75rem}
+.feedback-rating,.feedback fieldset{display:flex;gap:.75rem;flex-wrap:wrap;border:0;padding:0;margin:.65rem 0}
+.feedback label{display:flex;align-items:flex-start;gap:.4rem}.feedback fieldset legend{font-weight:600;margin-bottom:.4rem}
+.feedback .consent{margin:.8rem 0;font-size:.88rem;max-width:55rem}.feedback button{margin-top:.5rem}
